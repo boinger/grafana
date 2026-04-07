@@ -311,6 +311,7 @@ func (d *AlertsRouter) datasourceToExternalAMcfg(ds *datasources.DataSource) (Ex
 	}
 
 	return ExternalAMcfg{
+		DatasourceUID:      ds.UID,
 		URL:                amURL,
 		Headers:            headers,
 		InsecureSkipVerify: insecureSkipVerify,

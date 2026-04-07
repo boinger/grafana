@@ -31,8 +31,8 @@ func do(ctx context.Context, client *http.Client, req *http.Request) (*http.Resp
 }
 
 // ApplyConfig updates the status state as the new config requires.
-// Extension: add new parameter headers.
-func (n *Manager) ApplyConfig(conf *config.Config, headers map[string]http.Header) error {
+// Extension: add new parameters headers and datasourceUIDs.
+func (n *Manager) ApplyConfig(conf *config.Config, headers map[string]http.Header, datasourceUIDs map[string]string) error {
 	n.mtx.Lock()
 	defer n.mtx.Unlock()
 
@@ -71,6 +71,10 @@ func (n *Manager) ApplyConfig(conf *config.Config, headers map[string]http.Heade
 		if headers, ok := headers[k]; ok {
 			ams.headers = headers
 		}
+		// Extension: set the datasource UID to the alertmanager set.
+		if uid, ok := datasourceUIDs[k]; ok {
+			ams.datasourceUID = uid
+		}
 		amSets[k] = ams
 	}
 
@@ -87,6 +91,8 @@ type alertmanagerSet struct {
 
 	// Extension: headers that should be used for the http requests to the alertmanagers.
 	headers http.Header
+	// Extension: datasourceUID is the UID of the datasource this alertmanager set was configured from.
+	datasourceUID string
 
 	metrics *alertMetrics
 
@@ -183,11 +189,11 @@ func (n *Manager) sendAll(alerts ...*Alert) bool {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(ams.cfg.Timeout))
 			defer cancel()
 
-			// Extension: added headers parameter.
-			go func(ctx context.Context, k string, client *http.Client, url string, payload []byte, count int, headers http.Header) {
+			// Extension: added headers and datasourceUID parameters.
+			go func(ctx context.Context, k string, client *http.Client, url string, payload []byte, count int, headers http.Header, dsUID string) {
 				err := n.sendOne(ctx, client, url, payload, headers)
 				if err != nil {
-					n.logger.Error("Error sending alerts", "alertmanager", url, "count", count, "err", err)
+					n.logger.Error("Error sending alerts", "alertmanager", url, "datasource_uid", dsUID, "count", count, "err", err)
 					n.metrics.errors.WithLabelValues(url).Add(float64(count))
 				} else {
 					amSetCovered.CompareAndSwap(k, false, true)
@@ -197,7 +203,7 @@ func (n *Manager) sendAll(alerts ...*Alert) bool {
 				n.metrics.sent.WithLabelValues(url).Add(float64(count))
 
 				wg.Done()
-			}(ctx, k, ams.client, am.url().String(), payload, len(amAlerts), ams.headers)
+			}(ctx, k, ams.client, am.url().String(), payload, len(amAlerts), ams.headers, ams.datasourceUID)
 		}
 
 		ams.mtx.RUnlock()

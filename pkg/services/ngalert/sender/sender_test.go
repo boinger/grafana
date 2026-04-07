@@ -2,6 +2,7 @@ package sender
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -230,6 +231,48 @@ func TestWithUTF8Labels(t *testing.T) {
 		result := am.alertToNotifierAlert(alert)
 		require.Equal(t, "test", result.Annotations.Get("some_name"))
 		require.Equal(t, "fire", result.Labels.Get("_0x1f525"))
+	})
+}
+
+func TestBuildNotifierConfig(t *testing.T) {
+	t.Run("returns datasource UIDs map keyed by config index", func(t *testing.T) {
+		alertmanagers := []ExternalAMcfg{
+			{
+				DatasourceUID: "grafanacloud-ngalertmanager",
+				URL:           "https://am1.example.com:9093",
+				Headers:       http.Header{"X-Custom": []string{"value1"}},
+			},
+			{
+				DatasourceUID: "custom-am",
+				URL:           "https://am2.example.com:9093",
+			},
+		}
+
+		cfg, headers, uids, err := buildNotifierConfig(alertmanagers)
+		require.NoError(t, err)
+		require.Len(t, cfg.AlertingConfig.AlertmanagerConfigs, 2)
+		require.Equal(t, http.Header{"X-Custom": []string{"value1"}}, headers["config-0"])
+		require.Equal(t, "grafanacloud-ngalertmanager", uids["config-0"])
+		require.Equal(t, "custom-am", uids["config-1"])
+	})
+
+	t.Run("omits empty datasource UIDs", func(t *testing.T) {
+		alertmanagers := []ExternalAMcfg{
+			{
+				URL: "https://am1.example.com:9093",
+			},
+			{
+				DatasourceUID: "my-am",
+				URL:           "https://am2.example.com:9093",
+			},
+		}
+
+		_, _, uids, err := buildNotifierConfig(alertmanagers)
+		require.NoError(t, err)
+		require.Len(t, uids, 1)
+		_, ok := uids["config-0"]
+		require.False(t, ok)
+		require.Equal(t, "my-am", uids["config-1"])
 	})
 }
 

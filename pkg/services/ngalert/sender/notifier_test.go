@@ -664,7 +664,7 @@ alerting:
 	mustStrictlyDecodeConfig(t, strings.NewReader(s), cfg)
 	require.Len(t, cfg.AlertingConfig.AlertmanagerConfigs, 1)
 
-	err := n.ApplyConfig(cfg, nil)
+	err := n.ApplyConfig(cfg, nil, nil)
 	require.NoError(t, err, "Error applying the config.")
 
 	tgs := make(map[string][]*targetgroup.Group)
@@ -714,7 +714,7 @@ alerting:
 	mustStrictlyDecodeConfig(t, strings.NewReader(s), cfg)
 	require.Len(t, cfg.AlertingConfig.AlertmanagerConfigs, 1)
 
-	err := n.ApplyConfig(cfg, nil)
+	err := n.ApplyConfig(cfg, nil, nil)
 	require.NoError(t, err, "Error applying the config.")
 
 	tgs := make(map[string][]*targetgroup.Group)
@@ -1094,14 +1094,14 @@ alerting:
 	require.Len(t, cfg.AlertingConfig.AlertmanagerConfigs, 1)
 
 	// First, apply the config and reload.
-	require.NoError(t, n.ApplyConfig(cfg, nil))
+	require.NoError(t, n.ApplyConfig(cfg, nil, nil))
 	tgs := map[string][]*targetgroup.Group{"config-0": {targetGroup}}
 	n.reload(tgs)
 	require.Len(t, n.Alertmanagers(), 1)
 	require.Equal(t, alertmanagerURL, n.Alertmanagers()[0].String())
 
 	// Reapply the config.
-	require.NoError(t, n.ApplyConfig(cfg, nil))
+	require.NoError(t, n.ApplyConfig(cfg, nil, nil))
 	// Ensure the known alertmanagers are not dropped.
 	require.Len(t, n.Alertmanagers(), 1)
 	require.Equal(t, alertmanagerURL, n.Alertmanagers()[0].String())
@@ -1119,7 +1119,7 @@ alerting:
 	mustStrictlyDecodeConfig(t, strings.NewReader(s), cfg)
 	require.Len(t, cfg.AlertingConfig.AlertmanagerConfigs, 2)
 
-	require.NoError(t, n.ApplyConfig(cfg, nil))
+	require.NoError(t, n.ApplyConfig(cfg, nil, nil))
 	require.Len(t, n.Alertmanagers(), 1)
 	// Ensure no unnecessary alertmanagers are injected.
 	require.Empty(t, n.alertmanagers["config-0"].ams)
@@ -1142,7 +1142,7 @@ alerting:
 	mustStrictlyDecodeConfig(t, strings.NewReader(s), cfg)
 	require.Len(t, cfg.AlertingConfig.AlertmanagerConfigs, 2)
 
-	require.NoError(t, n.ApplyConfig(cfg, nil))
+	require.NoError(t, n.ApplyConfig(cfg, nil, nil))
 	require.Len(t, n.Alertmanagers(), 2)
 	for cfgIdx := range 2 {
 		ams := n.alertmanagers[fmt.Sprintf("config-%d", cfgIdx)].ams
@@ -1169,8 +1169,42 @@ alerting:
 	mustStrictlyDecodeConfig(t, strings.NewReader(s), cfg)
 	require.Len(t, cfg.AlertingConfig.AlertmanagerConfigs, 2)
 
-	require.NoError(t, n.ApplyConfig(cfg, nil))
+	require.NoError(t, n.ApplyConfig(cfg, nil, nil))
 	require.Empty(t, n.Alertmanagers())
+}
+
+func TestApplyConfigDatasourceUIDs(t *testing.T) {
+	n := NewManager(&Options{}, nil)
+	cfg := &config.Config{}
+	s := `
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+      - alertmanager1:9093
+  - static_configs:
+    - targets:
+      - alertmanager2:9093
+`
+	mustStrictlyDecodeConfig(t, strings.NewReader(s), cfg)
+	require.Len(t, cfg.AlertingConfig.AlertmanagerConfigs, 2)
+
+	uids := map[string]string{
+		"config-0": "grafanacloud-ngalertmanager",
+		"config-1": "custom-am-uid",
+	}
+
+	require.NoError(t, n.ApplyConfig(cfg, nil, uids))
+	require.Equal(t, "grafanacloud-ngalertmanager", n.alertmanagers["config-0"].datasourceUID)
+	require.Equal(t, "custom-am-uid", n.alertmanagers["config-1"].datasourceUID)
+
+	// Reapply with different UIDs (e.g., datasource renamed).
+	uids2 := map[string]string{
+		"config-0": "new-uid",
+	}
+	require.NoError(t, n.ApplyConfig(cfg, nil, uids2))
+	require.Equal(t, "new-uid", n.alertmanagers["config-0"].datasourceUID)
+	require.Equal(t, "", n.alertmanagers["config-1"].datasourceUID)
 }
 
 // Maintain strict yaml decode behavior from v2: https://github.com/go-yaml/yaml/issues/639#issuecomment-666935833
