@@ -62,7 +62,7 @@ func TestIntegrationSendingToExternalAlertmanager(t *testing.T) {
 		}),
 	}
 	alertsRouter := NewAlertsRouter(moa, fakeAdminConfigStore, mockedClock, appUrl, map[int64]struct{}{}, 10*time.Minute,
-		&fake_ds.FakeDataSourceService{DataSources: []*datasources.DataSource{&ds1}}, fake_secrets.NewFakeSecretsService(), featuremgmt.WithFeatures(), false)
+		&fake_ds.FakeDataSourceService{DataSources: []*datasources.DataSource{&ds1}}, fake_secrets.NewFakeSecretsService(), featuremgmt.WithFeatures(), false, nil)
 
 	mockedGetAdminConfigurations.Return([]*models.AdminConfiguration{
 		{OrgID: ruleKey.OrgID, SendAlertsTo: ptrTo(models.AllAlertmanagers)},
@@ -132,7 +132,7 @@ func TestIntegrationSendingToExternalAlertmanager_WithMultipleOrgs(t *testing.T)
 	}
 	fakeDs := &fake_ds.FakeDataSourceService{DataSources: []*datasources.DataSource{&ds1}}
 	alertsRouter := NewAlertsRouter(moa, fakeAdminConfigStore, mockedClock, appUrl, map[int64]struct{}{}, 10*time.Minute,
-		fakeDs, fake_secrets.NewFakeSecretsService(), featuremgmt.WithFeatures(), false)
+		fakeDs, fake_secrets.NewFakeSecretsService(), featuremgmt.WithFeatures(), false, nil)
 
 	mockedGetAdminConfigurations.Return([]*models.AdminConfiguration{
 		{OrgID: ruleKey1.OrgID, SendAlertsTo: ptrTo(models.AllAlertmanagers)},
@@ -291,7 +291,7 @@ func TestChangingAlertmanagersChoice(t *testing.T) {
 		}),
 	}
 	alertsRouter := NewAlertsRouter(moa, fakeAdminConfigStore, mockedClock, appUrl, map[int64]struct{}{},
-		10*time.Minute, &fake_ds.FakeDataSourceService{DataSources: []*datasources.DataSource{&ds}}, fake_secrets.NewFakeSecretsService(), featuremgmt.WithFeatures(), false)
+		10*time.Minute, &fake_ds.FakeDataSourceService{DataSources: []*datasources.DataSource{&ds}}, fake_secrets.NewFakeSecretsService(), featuremgmt.WithFeatures(), false, nil)
 
 	mockedGetAdminConfigurations.Return([]*models.AdminConfiguration{
 		{OrgID: ruleKey.OrgID, SendAlertsTo: ptrTo(models.AllAlertmanagers)},
@@ -393,7 +393,7 @@ func TestAlertmanagersChoiceWithDisableExternalFeatureToggle(t *testing.T) {
 
 	alertsRouter := NewAlertsRouter(moa, fakeAdminConfigStore, mockedClock, appUrl, map[int64]struct{}{},
 		10*time.Minute, &fake_ds.FakeDataSourceService{DataSources: []*datasources.DataSource{&ds}},
-		fake_secrets.NewFakeSecretsService(), featuremgmt.WithFeatures(featuremgmt.FlagAlertingDisableSendAlertsExternal), false)
+		fake_secrets.NewFakeSecretsService(), featuremgmt.WithFeatures(featuremgmt.FlagAlertingDisableSendAlertsExternal), false, nil)
 
 	// Test that we only send to the internal Alertmanager even though the configuration specifies AllAlertmanagers.
 
@@ -955,7 +955,7 @@ func TestSendBroadcastAlerts(t *testing.T) {
 			fakeAdminConfigStore.EXPECT().GetAdminConfigurations().Return(nil, nil)
 
 			alertsRouter := NewAlertsRouter(moa, fakeAdminConfigStore, mockedClock, appUrl, map[int64]struct{}{},
-				10*time.Minute, &fake_ds.FakeDataSourceService{}, fake_secrets.NewFakeSecretsService(), featuremgmt.WithFeatures(), tc.broadcastAlerts)
+				10*time.Minute, &fake_ds.FakeDataSourceService{}, fake_secrets.NewFakeSecretsService(), featuremgmt.WithFeatures(), tc.broadcastAlerts, nil)
 
 			require.NoError(t, alertsRouter.SyncAndApplyConfigFromDatabase(context.Background()))
 

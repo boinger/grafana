@@ -159,8 +159,6 @@ func NewExternalAlertmanagerSender(l log.Logger, reg prometheus.Registerer, opts
 	}
 
 	s.manager = NewManager(
-		// Injecting a new registry here means these metrics are not exported.
-		// Once we fix the individual Alertmanager metrics we should fix this scenario too.
 		&options.Options,
 		toSlogLogger(s.logger),
 	)
