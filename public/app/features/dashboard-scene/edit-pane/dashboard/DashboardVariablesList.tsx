@@ -4,6 +4,7 @@ import { useCallback, useMemo } from 'react';
 import { VariableHide } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { t, Trans } from '@grafana/i18n';
+import { config } from '@grafana/runtime';
 import { type SceneVariableSet, type SceneVariable } from '@grafana/scenes';
 import { Box, Button } from '@grafana/ui';
 
@@ -12,6 +13,7 @@ import { openAddVariablePane } from '../../settings/variables/VariableTypeSelect
 import { isEditableVariableType } from '../../settings/variables/utils';
 import { DashboardInteractions } from '../../utils/interactions';
 import { getDashboardSceneFor } from '../../utils/utils';
+import { openAddFilterPane } from '../add-new/AddFilters';
 import { dashboardEditActions } from '../shared';
 
 import { DraggableList } from './DraggableList';
@@ -29,7 +31,22 @@ const DROPPABLE_TO_HIDE: Record<string, VariableHide> = {
 
 export function DashboardVariablesList({ variableSet }: { variableSet: SceneVariableSet }) {
   const { variables } = variableSet.useState();
-  const { editable, nonEditable } = useMemo(() => partitionVariablesByEditability(variables), [variables]);
+  const { editable, nonEditable } = useMemo(() => {
+    const result = partitionVariablesByEditability(variables);
+    if (!config.featureToggles.dashboardUnifiedDrilldownControls) {
+      return result;
+    }
+    const filteredEditable: SceneVariable[] = [];
+    const filteredNonEditable = [...result.nonEditable];
+    for (const v of result.editable) {
+      if (v.state.type === 'adhoc') {
+        filteredNonEditable.push(v);
+      } else {
+        filteredEditable.push(v);
+      }
+    }
+    return { editable: filteredEditable, nonEditable: filteredNonEditable };
+  }, [variables]);
   const { visible, controlsMenu, hidden } = useMemo(() => partitionVariablesByDisplay(editable), [editable]);
 
   const onClickVariable = useCallback((variable: SceneVariable) => {
@@ -186,4 +203,67 @@ export function partitionVariablesByDisplay(variables: SceneVariable[]) {
     }
   });
   return { visible, controlsMenu, hidden };
+}
+
+export function DashboardFiltersList({ variableSet }: { variableSet: SceneVariableSet }) {
+  const { variables } = variableSet.useState();
+  const filters = useMemo(() => variables.filter((v) => v.state.type === 'adhoc'), [variables]);
+  const { visible, controlsMenu, hidden } = useMemo(() => partitionVariablesByDisplay(filters), [filters]);
+
+  const onClickFilter = useCallback((variable: SceneVariable) => {
+    const { editPane } = getDashboardSceneFor(variable).state;
+    editPane.selectObject(variable);
+  }, []);
+
+  return (
+    <>
+      <DraggableList
+        items={visible}
+        droppableId="filters-list-visible"
+        title={t('dashboard-scene.filters-list.title-above-dashboard', 'Above dashboard ({{count}})', {
+          count: visible.length,
+        })}
+        onClickItem={onClickFilter}
+        renderItemLabel={renderItemLabel}
+      />
+      <DraggableList
+        items={controlsMenu}
+        droppableId="filters-list-controls-menu"
+        title={t('dashboard-scene.filters-list.title-controls-menu', 'Controls menu ({{count}})', {
+          count: controlsMenu.length,
+        })}
+        onClickItem={onClickFilter}
+        renderItemLabel={renderItemLabel}
+      />
+      <DraggableList
+        items={hidden}
+        droppableId="filters-list-hidden"
+        title={t('dashboard-scene.filters-list.title-hidden', 'Hidden ({{count}})', { count: hidden.length })}
+        onClickItem={onClickFilter}
+        renderItemLabel={renderItemLabel}
+      />
+    </>
+  );
+}
+
+export function AddFilterButton({ dashboard }: { dashboard: DashboardScene }) {
+  const onAddFilter = useCallback(() => {
+    openAddFilterPane(dashboard);
+    DashboardInteractions.addVariableButtonClicked({ source: 'edit_pane' });
+  }, [dashboard]);
+
+  return (
+    <Box display="flex" paddingTop={1} paddingBottom={1}>
+      <Button
+        fullWidth
+        icon="plus"
+        size="sm"
+        variant="secondary"
+        onClick={onAddFilter}
+        data-testid={selectors.components.PanelEditor.ElementEditPane.addFilterButton}
+      >
+        <Trans i18nKey="dashboard-scene.filters-list.add-filter">Add filter</Trans>
+      </Button>
+    </Box>
+  );
 }
