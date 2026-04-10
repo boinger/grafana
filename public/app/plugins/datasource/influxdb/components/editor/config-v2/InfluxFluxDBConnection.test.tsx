@@ -58,7 +58,9 @@ describe('InfluxFluxDBConnection', () => {
       const validation = createMockValidation();
       render(<InfluxFluxDBConnection {...emptyProps} validation={validation} />);
 
-      await act(async () => { validation.runValidator(); });
+      await act(async () => {
+        validation.runValidator();
+      });
 
       expect(screen.getByText('Organization is required')).toBeInTheDocument();
       expect(screen.getByText('Default bucket is required')).toBeInTheDocument();
@@ -69,7 +71,9 @@ describe('InfluxFluxDBConnection', () => {
       const validation = createMockValidation();
       render(<InfluxFluxDBConnection {...defaultProps} validation={validation} />);
 
-      await act(async () => { validation.runValidator(); });
+      await act(async () => {
+        validation.runValidator();
+      });
 
       expect(screen.queryByText('Organization is required')).not.toBeInTheDocument();
       expect(screen.queryByText('Default bucket is required')).not.toBeInTheDocument();

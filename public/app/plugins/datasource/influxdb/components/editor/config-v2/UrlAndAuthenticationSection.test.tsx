@@ -378,7 +378,9 @@ describe('UrlAndAuthenticationSection', () => {
       const validation = createMockValidation();
       render(<UrlAndAuthenticationSection {...emptyProps} validation={validation} />);
 
-      await act(async () => { validation.runValidator(); });
+      await act(async () => {
+        validation.runValidator();
+      });
 
       expect(screen.getByText('URL is required')).toBeInTheDocument();
       expect(screen.getByText('Product is required')).toBeInTheDocument();
@@ -389,7 +391,9 @@ describe('UrlAndAuthenticationSection', () => {
       const validation = createMockValidation();
       render(<UrlAndAuthenticationSection {...filledProps} validation={validation} />);
 
-      await act(async () => { validation.runValidator(); });
+      await act(async () => {
+        validation.runValidator();
+      });
 
       expect(screen.queryByText('URL is required')).not.toBeInTheDocument();
       expect(screen.queryByText('Product is required')).not.toBeInTheDocument();

@@ -57,7 +57,9 @@ describe('InfluxInfluxQLDBConnection', () => {
       const validation = createMockValidation();
       render(<InfluxInfluxQLDBConnection {...emptyProps} validation={validation} />);
 
-      await act(async () => { validation.runValidator(); });
+      await act(async () => {
+        validation.runValidator();
+      });
 
       expect(screen.getByText('Database is required')).toBeInTheDocument();
       expect(screen.getByText('User is required')).toBeInTheDocument();
@@ -68,7 +70,9 @@ describe('InfluxInfluxQLDBConnection', () => {
       const validation = createMockValidation();
       render(<InfluxInfluxQLDBConnection {...defaultProps} validation={validation} />);
 
-      await act(async () => { validation.runValidator(); });
+      await act(async () => {
+        validation.runValidator();
+      });
 
       expect(screen.queryByText('Database is required')).not.toBeInTheDocument();
       expect(screen.queryByText('User is required')).not.toBeInTheDocument();

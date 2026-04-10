@@ -25,21 +25,37 @@ export const InfluxSQLDBConnection = (props: Props) => {
       return;
     }
     if (options.jsonData.dbName) {
-      setFieldErrors((prev) => { const next = { ...prev }; delete next.dbName; return next; });
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next.dbName;
+        return next;
+      });
       validation.clearError('dbName');
     }
     if (tokenConfigured || tokenEntered) {
-      setFieldErrors((prev) => { const next = { ...prev }; delete next.token; return next; });
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next.token;
+        return next;
+      });
       validation.clearError('token');
     }
     return validation.registerValidation(() => {
       const errors: Record<string, string> = {};
-      if (!options.jsonData.dbName) { errors.dbName = 'Database is required'; }
-      if (!tokenConfigured && !tokenEntered) { errors.token = 'Token is required'; }
+      if (!options.jsonData.dbName) {
+        errors.dbName = 'Database is required';
+      }
+      if (!tokenConfigured && !tokenEntered) {
+        errors.token = 'Token is required';
+      }
       setFieldErrors(errors);
       Object.entries(errors).forEach(([field, msg]) => validation.setError(field, msg));
-      if (!errors.dbName) { validation.clearError('dbName'); }
-      if (!errors.token) { validation.clearError('token'); }
+      if (!errors.dbName) {
+        validation.clearError('dbName');
+      }
+      if (!errors.token) {
+        validation.clearError('token');
+      }
       return Object.keys(errors).length === 0;
     });
   }, [options.jsonData.dbName, tokenConfigured, tokenEntered, validation]);

@@ -127,33 +127,36 @@ export function EditDataSourceView({
   const validators = useRef(new Set<() => Promise<boolean> | boolean>());
   const validationErrorsRef = useRef<Record<string, string>>({});
 
-  const validation = useMemo((): DataSourceConfigValidationAPI => ({
-    registerValidation(validator) {
-      validators.current.add(validator);
-      return () => validators.current.delete(validator);
-    },
-    async validate() {
-      const results = await Promise.all(Array.from(validators.current).map((v) => Promise.resolve(v())));
-      return results.every(Boolean);
-    },
-    isValid() {
-      return Object.keys(validationErrorsRef.current).length === 0;
-    },
-    getErrors() {
-      return validationErrorsRef.current;
-    },
-    setError(field, message) {
-      validationErrorsRef.current = { ...validationErrorsRef.current, [field]: message };
-    },
-    clearError(field) {
-      if (field in validationErrorsRef.current) {
-        const next = { ...validationErrorsRef.current };
-        delete next[field];
-        validationErrorsRef.current = next;
-      }
-    },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), []);
+  const validation = useMemo(
+    (): DataSourceConfigValidationAPI => ({
+      registerValidation(validator) {
+        validators.current.add(validator);
+        return () => validators.current.delete(validator);
+      },
+      async validate() {
+        const results = await Promise.all(Array.from(validators.current).map((v) => Promise.resolve(v())));
+        return results.every(Boolean);
+      },
+      isValid() {
+        return Object.keys(validationErrorsRef.current).length === 0;
+      },
+      getErrors() {
+        return validationErrorsRef.current;
+      },
+      setError(field, message) {
+        validationErrorsRef.current = { ...validationErrorsRef.current, [field]: message };
+      },
+      clearError(field) {
+        if (field in validationErrorsRef.current) {
+          const next = { ...validationErrorsRef.current };
+          delete next[field];
+          validationErrorsRef.current = next;
+        }
+      },
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }),
+    []
+  );
   // This is a workaround to avoid race-conditions between the `setSecureJsonData()` and `setJsonData()` calls instantiated by the extension components.
   // Both those exposed functions are calling `onOptionsChange()` with the new jsonData and secureJsonData, and if they are called in the same tick, the Redux store
   // (which provides the `datasource` object) won't be updated yet, and they override each others `jsonData` value.
@@ -173,43 +176,46 @@ export function EditDataSourceView({
   const dsi = getDataSourceSrv()?.getInstanceSettings(dataSource.uid);
 
   const submitting = useRef(false);
-  const onSubmit = useCallback(async (e: React.MouseEvent<HTMLButtonElement> | React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    // ButtonRow renders a button with both type="submit" and onClick={onSubmit},
-    // so this handler can fire twice per click (once from onClick, once from the
-    // form's submit event). Guard against the duplicate.
-    if (submitting.current) {
-      return;
-    }
-    submitting.current = true;
-    try {
-      trackDsConfigClicked('save_and_test');
-
-      const valid = await validation.validate();
-      if (!valid) {
-        // Inline errors are already shown via validation.setError calls inside the
-        // registered validators. Also surface a summary in the standard testing-status
-        // slot so the user knows why save was blocked.
-        const errors = validation.getErrors();
-        const message = Object.values(errors).join(' · ') || 'Please fill in all required fields.';
-        dispatch(testDataSourceFailed({ message, status: 'error' }));
+  const onSubmit = useCallback(
+    async (e: React.MouseEvent<HTMLButtonElement> | React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      // ButtonRow renders a button with both type="submit" and onClick={onSubmit},
+      // so this handler can fire twice per click (once from onClick, once from the
+      // form's submit event). Guard against the duplicate.
+      if (submitting.current) {
         return;
       }
-
+      submitting.current = true;
       try {
-        await onUpdate({ ...dataSource });
-        trackDsConfigUpdated({ item: 'success' });
-        appEvents.publish(new DataSourceUpdatedSuccessfully());
-      } catch (error) {
-        trackDsConfigUpdated({ item: 'fail' });
-        return;
-      }
+        trackDsConfigClicked('save_and_test');
 
-      onTest();
-    } finally {
-      submitting.current = false;
-    }
-  }, [validation, onUpdate, dataSource, onTest, dispatch]);
+        const valid = await validation.validate();
+        if (!valid) {
+          // Inline errors are already shown via validation.setError calls inside the
+          // registered validators. Also surface a summary in the standard testing-status
+          // slot so the user knows why save was blocked.
+          const errors = validation.getErrors();
+          const message = Object.values(errors).join(' · ') || 'Please fill in all required fields.';
+          dispatch(testDataSourceFailed({ message, status: 'error' }));
+          return;
+        }
+
+        try {
+          await onUpdate({ ...dataSource });
+          trackDsConfigUpdated({ item: 'success' });
+          appEvents.publish(new DataSourceUpdatedSuccessfully());
+        } catch (error) {
+          trackDsConfigUpdated({ item: 'fail' });
+          return;
+        }
+
+        onTest();
+      } finally {
+        submitting.current = false;
+      }
+    },
+    [validation, onUpdate, dataSource, onTest, dispatch]
+  );
 
   if (loading || isLoading) {
     return <PageLoader />;

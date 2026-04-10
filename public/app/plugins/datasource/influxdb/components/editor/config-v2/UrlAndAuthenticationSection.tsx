@@ -48,27 +48,51 @@ export const UrlAndAuthenticationSection = (props: Props) => {
       return;
     }
     if (options.url) {
-      setFieldErrors((prev) => { const next = { ...prev }; delete next.url; return next; });
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next.url;
+        return next;
+      });
       validation.clearError('url');
     }
     if (options.jsonData.product) {
-      setFieldErrors((prev) => { const next = { ...prev }; delete next.product; return next; });
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next.product;
+        return next;
+      });
       validation.clearError('product');
     }
     if (options.jsonData.version) {
-      setFieldErrors((prev) => { const next = { ...prev }; delete next.version; return next; });
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next.version;
+        return next;
+      });
       validation.clearError('version');
     }
     return validation.registerValidation(() => {
       const errors: Record<string, string> = {};
-      if (!options.url) { errors.url = 'URL is required'; }
-      if (!options.jsonData.product) { errors.product = 'Product is required'; }
-      if (!options.jsonData.version) { errors.version = 'Query language is required'; }
+      if (!options.url) {
+        errors.url = 'URL is required';
+      }
+      if (!options.jsonData.product) {
+        errors.product = 'Product is required';
+      }
+      if (!options.jsonData.version) {
+        errors.version = 'Query language is required';
+      }
       setFieldErrors(errors);
       Object.entries(errors).forEach(([field, msg]) => validation.setError(field, msg));
-      if (!errors.url) { validation.clearError('url'); }
-      if (!errors.product) { validation.clearError('product'); }
-      if (!errors.version) { validation.clearError('version'); }
+      if (!errors.url) {
+        validation.clearError('url');
+      }
+      if (!errors.product) {
+        validation.clearError('product');
+      }
+      if (!errors.version) {
+        validation.clearError('version');
+      }
       return Object.keys(errors).length === 0;
     });
   }, [options.url, options.jsonData.product, options.jsonData.version, validation]);

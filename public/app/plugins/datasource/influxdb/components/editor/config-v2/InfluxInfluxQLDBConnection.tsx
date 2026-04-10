@@ -26,27 +26,51 @@ export const InfluxInfluxQLDBConnection = (props: Props) => {
       return;
     }
     if (options.jsonData.dbName) {
-      setFieldErrors((prev) => { const next = { ...prev }; delete next.dbName; return next; });
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next.dbName;
+        return next;
+      });
       validation.clearError('dbName');
     }
     if (options.user) {
-      setFieldErrors((prev) => { const next = { ...prev }; delete next.user; return next; });
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next.user;
+        return next;
+      });
       validation.clearError('user');
     }
     if (passwordConfigured || passwordEntered) {
-      setFieldErrors((prev) => { const next = { ...prev }; delete next.password; return next; });
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next.password;
+        return next;
+      });
       validation.clearError('password');
     }
     return validation.registerValidation(() => {
       const errors: Record<string, string> = {};
-      if (!options.jsonData.dbName) { errors.dbName = 'Database is required'; }
-      if (!options.user) { errors.user = 'User is required'; }
-      if (!passwordConfigured && !passwordEntered) { errors.password = 'Password is required'; }
+      if (!options.jsonData.dbName) {
+        errors.dbName = 'Database is required';
+      }
+      if (!options.user) {
+        errors.user = 'User is required';
+      }
+      if (!passwordConfigured && !passwordEntered) {
+        errors.password = 'Password is required';
+      }
       setFieldErrors(errors);
       Object.entries(errors).forEach(([field, msg]) => validation.setError(field, msg));
-      if (!errors.dbName) { validation.clearError('dbName'); }
-      if (!errors.user) { validation.clearError('user'); }
-      if (!errors.password) { validation.clearError('password'); }
+      if (!errors.dbName) {
+        validation.clearError('dbName');
+      }
+      if (!errors.user) {
+        validation.clearError('user');
+      }
+      if (!errors.password) {
+        validation.clearError('password');
+      }
       return Object.keys(errors).length === 0;
     });
   }, [options.jsonData.dbName, options.user, passwordConfigured, passwordEntered, validation]);

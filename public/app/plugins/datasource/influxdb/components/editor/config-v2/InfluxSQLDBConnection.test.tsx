@@ -51,7 +51,9 @@ describe('InfluxSQLDBConnection', () => {
       const validation = createMockValidation();
       render(<InfluxSQLDBConnection {...emptyProps} validation={validation} />);
 
-      await act(async () => { validation.runValidator(); });
+      await act(async () => {
+        validation.runValidator();
+      });
 
       expect(screen.getByText('Database is required')).toBeInTheDocument();
       expect(screen.getByText('Token is required')).toBeInTheDocument();
@@ -61,7 +63,9 @@ describe('InfluxSQLDBConnection', () => {
       const validation = createMockValidation();
       render(<InfluxSQLDBConnection {...defaultProps} validation={validation} />);
 
-      await act(async () => { validation.runValidator(); });
+      await act(async () => {
+        validation.runValidator();
+      });
 
       expect(screen.queryByText('Database is required')).not.toBeInTheDocument();
       expect(screen.queryByText('Token is required')).not.toBeInTheDocument();
