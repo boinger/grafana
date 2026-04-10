@@ -201,16 +201,13 @@ export function EditDataSourceView({
         trackDsConfigUpdated({ item: 'fail' });
         return;
       }
-
+      retryAdvisorCheck(dataSource.uid).catch((error) => {
+        console.warn('Error retrying datasource advisor check', error);
+      });
       onTest();
     },
-    [validation, onUpdate, dataSource, onTest, dispatch]
+    [validation, onUpdate, dataSource, onTest, dispatch, retryAdvisorCheck]
   );
-    retryAdvisorCheck(dataSource.uid).catch((error) => {
-      console.warn('Error retrying datasource advisor check', error);
-    });
-    onTest();
-  };
 
   if (loading || isLoading) {
     return <PageLoader />;
