@@ -175,44 +175,32 @@ export function EditDataSourceView({
 
   const dsi = getDataSourceSrv()?.getInstanceSettings(dataSource.uid);
 
-  const submitting = useRef(false);
   const onSubmit = useCallback(
     async (e: React.MouseEvent<HTMLButtonElement> | React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      // ButtonRow renders a button with both type="submit" and onClick={onSubmit},
-      // so this handler can fire twice per click (once from onClick, once from the
-      // form's submit event). Guard against the duplicate.
-      if (submitting.current) {
+      trackDsConfigClicked('save_and_test');
+
+      const valid = await validation.validate();
+      if (!valid) {
+        // Inline errors are already shown via validation.setError calls inside the
+        // registered validators. Also surface a summary in the standard testing-status
+        // slot so the user knows why save was blocked.
+        const errors = validation.getErrors();
+        const message = Object.values(errors).join(' · ') || 'Please fill in all required fields.';
+        dispatch(testDataSourceFailed({ message, status: 'error' }));
         return;
       }
-      submitting.current = true;
+
       try {
-        trackDsConfigClicked('save_and_test');
-
-        const valid = await validation.validate();
-        if (!valid) {
-          // Inline errors are already shown via validation.setError calls inside the
-          // registered validators. Also surface a summary in the standard testing-status
-          // slot so the user knows why save was blocked.
-          const errors = validation.getErrors();
-          const message = Object.values(errors).join(' · ') || 'Please fill in all required fields.';
-          dispatch(testDataSourceFailed({ message, status: 'error' }));
-          return;
-        }
-
-        try {
-          await onUpdate({ ...dataSource });
-          trackDsConfigUpdated({ item: 'success' });
-          appEvents.publish(new DataSourceUpdatedSuccessfully());
-        } catch (error) {
-          trackDsConfigUpdated({ item: 'fail' });
-          return;
-        }
-
-        onTest();
-      } finally {
-        submitting.current = false;
+        await onUpdate({ ...dataSource });
+        trackDsConfigUpdated({ item: 'success' });
+        appEvents.publish(new DataSourceUpdatedSuccessfully());
+      } catch (error) {
+        trackDsConfigUpdated({ item: 'fail' });
+        return;
       }
+
+      onTest();
     },
     [validation, onUpdate, dataSource, onTest, dispatch]
   );
