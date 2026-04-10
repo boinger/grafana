@@ -14,6 +14,7 @@ const START_INDEX = 0;
 interface RenderParams<T = ActionImpl | string> {
   item: T;
   active: boolean;
+  sectionLabel: string | null;
 }
 
 interface KBarResultsProps {
@@ -36,6 +37,17 @@ export const KBarResults = (props: KBarResultsProps) => {
     size: itemsRef.current.length,
     parentRef,
   });
+
+  const sectionForIndex = React.useMemo(() => {
+    let currentSection: string | null = null;
+    return props.items.map((item) => {
+      if (typeof item === 'string') {
+        currentSection = item;
+        return null;
+      }
+      return currentSection;
+    });
+  }, [props.items]);
 
   const { query, search, currentRootActionId, activeIndex, options } = useKBar((state) => ({
     search: state.searchQuery,
@@ -175,32 +187,48 @@ export const KBarResults = (props: KBarResultsProps) => {
           // Preferably this change is upstreamed and ActionImpl has this
           const { target, url } = item;
 
-          const handlers = typeof item !== 'string' && {
+          const isHeader = typeof item === 'string';
+          const handlers = !isHeader && {
             onPointerMove: () =>
               pointerMoved && activeIndex !== virtualRow.index && query.setActiveIndex(virtualRow.index),
             onPointerDown: () => query.setActiveIndex(virtualRow.index),
             onClick: (ev: React.MouseEvent) => execute(ev, item),
           };
           const active = virtualRow.index === activeIndex;
+          const sectionLabel = sectionForIndex[virtualRow.index] ?? null;
 
-          const childProps = {
-            id: getListboxItemId(virtualRow.index),
-            role: 'option',
-            'aria-selected': active,
-            style: {
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              transform: `translateY(${virtualRow.start}px)`,
-            } as const,
-            ...handlers,
-          };
+          const childProps = isHeader
+            ? {
+                id: getListboxItemId(virtualRow.index),
+                role: 'presentation' as const,
+                'aria-hidden': true as const,
+                style: {
+                  position: 'absolute' as const,
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  transform: `translateY(${virtualRow.start}px)`,
+                },
+              }
+            : {
+                id: getListboxItemId(virtualRow.index),
+                role: 'option' as const,
+                'aria-selected': active,
+                style: {
+                  position: 'absolute' as const,
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  transform: `translateY(${virtualRow.start}px)`,
+                },
+                ...handlers,
+              };
 
           const renderedItem = React.cloneElement(
             props.onRender({
               item,
               active,
+              sectionLabel,
             }),
             {
               ref: virtualRow.measureRef,

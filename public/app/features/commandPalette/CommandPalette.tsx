@@ -198,17 +198,19 @@ const RenderResults = ({ isFetchingSearchResults, searchResults, searchQuery }: 
     <KBarResults
       items={items}
       maxHeight={650}
-      onRender={({ item, active }) => {
+      onRender={({ item, active, sectionLabel }) => {
         const isFirst = items[0] === item;
 
-        const renderedItem =
-          typeof item === 'string' ? (
-            <div className={cx(styles.sectionHeader, isFirst && styles.sectionHeaderFirst)}>{item}</div>
-          ) : (
-            <ResultItem action={item} active={active} currentRootActionId={rootActionId!} />
-          );
+        if (typeof item === 'string') {
+          return <div className={cx(styles.sectionHeader, isFirst && styles.sectionHeaderFirst)}>{item}</div>;
+        }
 
-        return renderedItem;
+        return (
+          <div>
+            {sectionLabel && <span className="sr-only">{sectionLabel}, </span>}
+            <ResultItem action={item} active={active} currentRootActionId={rootActionId!} />
+          </div>
+        );
       }}
     />
   );
