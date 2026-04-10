@@ -1,4 +1,4 @@
-import { type DataSourceConfigValidationAPI, type DataSourcePluginOptionsEditorProps } from '@grafana/data';
+import { type DataSourcePluginOptionsEditorProps } from '@grafana/data';
 
 import { type InfluxOptions, type InfluxSecureJsonData } from '../../../types';
 
@@ -19,6 +19,4 @@ type InfluxSecureBasicAuthData = {
 export type Props = DataSourcePluginOptionsEditorProps<
   InfluxOptions & InfluxBasicAuthData,
   InfluxSecureJsonData & InfluxSecureBasicAuthData
-> & {
-  validation?: DataSourceConfigValidationAPI;
-};
+>;
